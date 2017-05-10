@@ -1,0 +1,182 @@
+
+
+Q1.
+
+CREATE OR REPLACE PROCEDURE UPDATE_Salary(p_executive_id executive.executive_id%TYPE) AS
+	IS_NULL EXCEPTION;
+	p_sal executive.executive_salary%TYPE;
+ 	role executive.executive_role%TYPE;
+BEGIN
+	BEGIN
+		SELECT executive_salary INTO p_sal FROM executive WHERE executive_id=p_executive_id;
+		IF p_sal IS null THEN
+			RAISE IS_NULL;
+		END IF;
+	EXCEPTION
+		WHEN IS_NULL THEN
+			dbms_output.put_line(' Salary is null ');
+	END;
+
+	SELECT EXECUTIVE_ROLE INTO role FROM executive WHERE executive_id=p_executive_id;
+	IF role='MANAGER' THEN
+		UPDATE executive SET executive_salary=executive_salary*1.03  WHERE executive_id=p_executive_id;
+		dbms_output.put_line('Salary of the Executive Id: <'||p_executive_id||'> successfully updated in the TABLE Executive');
+	ELSE
+		UPDATE executive SET executive_salary=executive_salary*1.02  WHERE executive_id=p_executive_id;
+		dbms_output.put_line('Salary of the Executive Id: <'||p_executive_id||'> successfully updated in the TABLE Executive');
+	END IF;
+EXCEPTION
+	
+	WHEN no_data_found THEN
+	dbms_output.put_line(' Invalid executive id!!!!!!!!!!! ');
+END;
+/ 
+
+***************************************************************************************************
+EXECUTION
+===============
+execute UPDATE_Salary( 49534);
+
+OR
+
+DECLARE
+	eid executive.executive_id%TYPE:=&Executive_ID;
+BEGIN
+	UPDATE_Salary( eid);
+END;
+/
+
+
+SELECT executive_id,executive_salary from  executive;
+
+****************************************************************************************************
+
+
+
+
+
+
+
+Q2.
+
+*********Package Declaration**************************************
+
+CREATE OR REPLACE package HOTEL_DETAILS AS
+	PROCEDURE Print_Report(hotelcode Hotel.Hotel_Code%TYPE);
+END;
+/
+
+
+**************Package Body *******************************************
+
+CREATE OR REPLACE package body HOTEL_DETAILS AS
+
+	function Validate_Hotel(hotelcode Hotel.Hotel_Code%TYPE) return boolean AS
+		ct number;
+	BEGIN
+		SELECT count(*) INTO ct FROM Hotel WHERE Hotel_Code=hotelcode;
+		IF ct=0 THEN
+			return false;
+		ELSE
+			return true;
+		END IF;
+	END;
+
+
+	PROCEDURE Print_Report(hotelcode Hotel.Hotel_Code%TYPE) AS
+		
+		vk Hotel%rowTYPE;
+		cursor c2 IS SELECT e.Executive_id, Executive_Name, Schedule_Start_Time, Schedule_End_Time FROM Executive e, Executive_Roster r WHERE 		e.Executive_id=r.Executive_id and r.Hotel_Code=hotelcode;
+		v c2%rowTYPE;
+	BEGIN
+		IF Validate_Hotel(hotelcode) THEN
+			SELECT * INTO vk FROM Hotel WHERE Hotel_Code=hotelcode; 
+			dbms_output.put_line('Hotel Code: '||vk.Hotel_Code);
+			dbms_output.put_line('Hotel Name: '||vk.Hotel_Name);
+			dbms_output.put_line('Hotel Address: '||vk.Hotel_Address);
+			dbms_output.put_line('Hotel City: '||vk.Hotel_City);
+			dbms_output.put_line('Hotel Rooms: '||vk.Hotel_No_Rooms);
+			
+			
+			dbms_output.put_line('Sr No.    Executive Id          Executive Name           ShIFt Start Time                  ShIFt END Time ');
+			
+			FOR v in c2
+			LOOP
+				dbms_output.put_line( c2%rowcount||'             '||v.executive_id||'             '||v.executive_Name||'              '||v.Schedule_Start_Time||'            '|| 				v.Schedule_END_Time);
+				
+			END LOOP;
+		ELSE
+			dbms_output.put_line('Invalid Hotel Code');
+		END IF;
+	END;
+				
+END;
+/
+
+
+***************************************************************************************************
+EXECUTION
+===============
+
+
+execute HOTEL_DETAILS.print_report('Wovo_JHA');
+
+execute HOTEL_DETAILS.print_report('Wo_JHA');
+
+OR
+
+DECLARE
+	hotelcode Hotel.Hotel_Code%TYPE:='&HotelCode';
+BEGIN
+	HOTEL_DETAILS.print_report(hotelcode);
+END;
+/
+
+****************************************************************************************************
+
+
+
+
+
+
+
+
+
+
+
+Q3.
+
+CREATE OR REPLACE TYPE Address_Object AS OBJECT(House_No number, street varchar2(30), City varchar2(20), Pincode number, State varchar2(20));
+/
+
+CREATE OR REPLACE TYPE AddressTab AS TABLE of Address_Object;
+/
+
+CREATE TABLE student(Student_id number primary key, Student_Name varchar2(20), Student_address AddressTab) nested TABLE Student_address stORe AS Address_Object_Tab;
+
+INSERT INTO student VALUES(101,'Akash',AddressTab(Address_Object(1234,'Hinjewadi','Pune',435261,'MaharAShtra'),Address_Object(1456,'Nigadi','Pune',487431,'MaharAShtra')));
+
+INSERT INTO student VALUES(102,'Pari',AddressTab(Address_Object(765,'Belapur','Mumbai',465298,'MaharAShtra'),Address_Object(842,'Dadar','Mumbai',432191,'MaharAShtra')));
+
+INSERT INTO student VALUES(103,'Ravina',AddressTab(Address_Object(987,'Medha','Satara',415012,'MaharAShtra'),Address_Object(3456,'Baner','Pune',456841,'MaharAShtra')));
+
+
+select s.Student_address.City,s.Student_address.Pincode, s.Student_address.State from Student s where s.student=102;
+
+DECLARE
+	address 	AddressTab;
+BEGIN
+	SELECT Student_address INTO address FROM Student WHERE Student_id=102;
+	dbms_output.put_line('Student ID= 102');
+	FOR i in 1..address.count
+	LOOP
+		dbms_output.put_line('City= '||address(i).City||'   Pincode= '||address(i).Pincode||'   State= '||address(i).State);
+	END LOOP;
+END;
+/
+
+
+
+
+
+

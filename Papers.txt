@@ -1,0 +1,89 @@
+create or replace procedure deletion(empid emp.empno%type) as
+	childfound exception;
+	pragma exception_init(childfound,-02292);	
+begin
+	delete from emp where empno=empid;
+	commit;
+	dbms_output.put_line('Record of emp id '||empid||' deleted from table with commit');
+exception
+	when no_data_found then
+	dbms_output.put_line('employee id does not exist');
+	when childfound then
+	dbms_output.put_line('emp wrking as mgr.... cant delete');
+end;
+/
+
+execute deletion(7698);
+execute deletion(7521);
+*********************************************************************************************
+
+
+create or replace type order_tab as object
+(Order_id number, Amount number);
+/
+
+create type order_details as table of order_tab;
+/
+
+create table book_order(Book_Code varchar2(20), order_info order_details) nested table order_info store as order_details_tab;
+
+insert into book_order values('B101',order_details(order_tab(1,2000)));
+
+insert into book_order values('B102',order_details(order_tab(4,2500),order_tab(7,3070)));
+
+insert into book_order values('B103',order_details(order_tab(3,5850),order_tab(2,7400)));
+
+select  b.Book_Code,b.order_info.Order_id, b.order_info.Amount from book_order b;
+
+
+
+select * from  book_order;
+
+create or replace procedure updateOrder as
+	new_order order_details;
+begin
+	new_order:=order_details(order_tab(5,6000),order_tab(5,8000));
+	update book_order set order_info=new_order where Book_Code='B102';
+	dbms_output.put_line('updated');
+end;
+/
+
+ execute updateOrder;
+
+
+declare
+	bid book_order.Book_Code%type;
+	 l_vehicle book_order.order_info%type;
+	cursor get_data is select pname, vehicle_details from Person_data;
+begin
+	open get_data;
+	loop
+		fetch get_data into   l_name,l_vehicle;
+	exit when get_data%notfound;
+	dbms_output.put_line('Person name=  '||l_name||'  and vehicles are ');
+	for x in 1..l_vehicle.count
+	loop
+		dbms_output.put_line(l_vehicle(x).vname);
+	end loop;
+	end loop;
+end;
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
